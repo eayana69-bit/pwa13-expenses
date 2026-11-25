@@ -1,1 +1,79 @@
-
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#6750a4">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>Шығындар есебі</title>
+<style>
+:root{--purple:#6750a4;--bg:#f5f3fa;--ink:#24212b}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,#6750a4,#9478d4);color:white;padding:28px 20px 38px;border-radius:0 0 28px 28px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}h1{font-size:25px;margin:0}
+button,select,input{font:inherit}select{border:0;border-radius:10px;padding:9px;background:white;color:#332b46}
+main{max-width:680px;margin:-18px auto 30px;padding:0 16px}
+.card{background:white;border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 5px 20px #30204b12}
+.small{font-size:14px;opacity:.8}.total{font-size:32px;font-weight:700;margin-top:8px}
+h2{font-size:18px;margin:0 0 16px}
+form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input{min-width:0;border:1px solid #ded9e8;border-radius:10px;padding:12px;background:#fff}
+input:first-child{grid-column:1/-1}
+form button{grid-column:1/-1}
+button{border:0;border-radius:11px;padding:12px 16px;background:var(--purple);color:white;font-weight:700;cursor:pointer}
+ul{list-style:none;padding:0;margin:0}.item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #eee}
+.item:last-child{border:0}.desc{font-weight:600}.date{font-size:12px;color:#777;margin-top:4px}.amount{font-weight:700;white-space:nowrap}
+.del{background:#fce9ec;color:#b32640;padding:8px 10px;margin-left:8px}
+.empty{text-align:center;color:#777;padding:18px}
+@media(max-width:420px){form{grid-template-columns:1fr}input:first-child,form button{grid-column:auto}}
+</style>
+</head>
+<body>
+<header><div class="top"><h1 id="heading">Шығындар есебі</h1><select id="language" aria-label="Language"><option value="kk">Қазақша</option><option value="ru">Русский</option></select></div><p id="subtitle">Жеке шығындарыңызды бақылаңыз</p></header>
+<main>
+<section class="card"><div class="small" id="totalLabel">Жалпы шығын</div><div class="total" id="total">0 ₸</div></section>
+<section class="card"><h2 id="formTitle">Жаңа шығын қосу</h2><form id="expenseForm">
+<input id="description" maxlength="60" required placeholder="Шығын атауы">
+<input id="amount" type="number" min="1" max="100000000" step="1" required placeholder="Сома (₸)">
+<input id="category" maxlength="30" placeholder="Санат">
+<button type="submit" id="addButton">Қосу</button>
+</form></section>
+<section class="card"><h2 id="listTitle">Шығындар тізімі</h2><ul id="expenses"></ul><div class="empty" id="empty">Әзірге шығын жоқ</div></section>
+</main>
+<script>
+const words={
+kk:{title:'Шығындар есебі',sub:'Жеке шығындарыңызды бақылаңыз',total:'Жалпы шығын',form:'Жаңа шығын қосу',desc:'Шығын атауы',amount:'Сома (₸)',cat:'Санат',add:'Қосу',list:'Шығындар тізімі',empty:'Әзірге шығын жоқ',del:'Жою',error:'Атауы мен дұрыс соманы енгізіңіз'},
+ru:{title:'Учёт расходов',sub:'Контролируйте личные расходы',total:'Общие расходы',form:'Добавить расход',desc:'Название расхода',amount:'Сумма (₸)',cat:'Категория',add:'Добавить',list:'Список расходов',empty:'Пока расходов нет',del:'Удалить',error:'Введите название и корректную сумму'}
+};
+let expenses=JSON.parse(localStorage.getItem('expenses-pwa13')||'[]');
+let lang=localStorage.getItem('expenses-lang')||'kk';
+const el=id=>document.getElementById(id);
+function save(){localStorage.setItem('expenses-pwa13',JSON.stringify(expenses))}
+function render(){
+ const w=words[lang];document.documentElement.lang=lang;
+ el('heading').textContent=w.title;el('subtitle').textContent=w.sub;el('totalLabel').textContent=w.total;
+ el('formTitle').textContent=w.form;el('description').placeholder=w.desc;el('amount').placeholder=w.amount;
+ el('category').placeholder=w.cat;el('addButton').textContent=w.add;el('listTitle').textContent=w.list;
+ el('empty').textContent=w.empty;el('empty').style.display=expenses.length?'none':'block';
+ el('total').textContent=expenses.reduce((s,x)=>s+x.amount,0).toLocaleString()+' ₸';
+ const list=el('expenses');list.replaceChildren();
+ expenses.forEach(item=>{
+  const li=document.createElement('li');li.className='item';
+  const left=document.createElement('div');const name=document.createElement('div');name.className='desc';name.textContent=item.description;
+  const date=document.createElement('div');date.className='date';date.textContent=(item.category||'—')+' · '+item.date;
+  left.append(name,date);const right=document.createElement('div');right.className='amount';right.textContent=item.amount.toLocaleString()+' ₸';
+  const del=document.createElement('button');del.className='del';del.textContent=w.del;del.addEventListener('click',()=>{expenses=expenses.filter(x=>x.id!==item.id);save();render()});
+  right.append(del);li.append(left,right);list.append(li);
+ });
+}
+el('language').value=lang;el('language').addEventListener('change',e=>{lang=e.target.value;localStorage.setItem('expenses-lang',lang);render()});
+el('expenseForm').addEventListener('submit',e=>{
+ e.preventDefault();const description=el('description').value.trim(),amount=Number(el('amount').value),category=el('category').value.trim();
+ if(!description||!Number.isFinite(amount)||amount<=0){alert(words[lang].error);return}
+ expenses.unshift({id:Date.now()+Math.random(),description,amount,category,date:new Date().toLocaleDateString()});
+ save();e.target.reset();render();
+});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(console.error))}
+render();
+</script>
+</body></html>
