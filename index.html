@@ -68,8 +68,14 @@ function render(){
 }
 el('language').value=lang;el('language').addEventListener('change',e=>{lang=e.target.value;localStorage.setItem('expenses-lang',lang);render()});
 el('expenseForm').addEventListener('submit',e=>{
- e.preventDefault();const description=el('description').value.trim(),amount=Number(el('amount').value),category=el('category').value.trim();
- if(!description||!Number.isFinite(amount)||amount<=0){alert(words[lang].error);return}
+ e.preventDefault();const description=el('description').value.trim();
+const amount=Number(el('amount').value);
+const category=el('category').value.trim();
+
+if(!description || !category || !Number.isFinite(amount) || amount<=0){
+ alert(words[lang].error);
+ return;
+}
  expenses.unshift({id:Date.now()+Math.random(),description,amount,category,date:new Date().toLocaleDateString()});
  save();e.target.reset();render();
 });
